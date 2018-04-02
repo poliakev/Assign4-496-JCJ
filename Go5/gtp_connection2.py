@@ -35,47 +35,5 @@ class GtpConnection2(gtp_connection.GtpConnection):
         """
         Return list of policy moves for the current_player of the board
         """
-        self.respond("TODO: Correclty, do this.")
-
-    def genmove_cmd(self, args):
-
-        self.respond("TODO: Fix this generate using new initalized nodes")
-        """
-        generate a move for the specified color
-
-        Arguments
-        ---------
-        args[0] : {'b','w'}
-            the color to generate a move for
-            it gets converted to  Black --> 1 White --> 2
-            color : {0,1}
-            board_color : {'b','w'}
-        """
-        try:
-            board_color = args[0].lower()
-            color = GoBoardUtil.color_to_int(board_color)
-            self.debug_msg("Board:\n{}\nko: {}\n".format(str(self.board.get_twoD_board()),
-                                                          self.board.ko_constraint))
-            move = self.go_engine.get_move(self.board, color)
-            if move is None:
-                self.respond("pass")
-                return
-
-            if not self.board.check_legal(move, color):
-                move = self.board._point_to_coord(move)
-                board_move = GoBoardUtil.format_point(move)
-                self.respond("Illegal move: {}".format(board_move))
-                raise RuntimeError("Illegal move given by engine")
-
-            # move is legal; play it
-            self.board.move(move,color)
-
-            self.debug_msg("Move: {}\nBoard: \n{}\n".format(move, str(self.board.get_twoD_board())))
-            move = self.board._point_to_coord(move)
-            board_move = GoBoardUtil.format_point(move)
-            self.respond(board_move)
-        except Exception as e:
-            self.respond('Error: {}'.format(str(e)))
-            raise
-
+        self.respond("TODO: Add prior knowledge function in gtp_connection.py")
 

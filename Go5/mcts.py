@@ -179,6 +179,10 @@ class MCTS(object):
         self.exploration = exploration
         self.simulation_policy = simulation_policy
         self.in_tree_knowledge = in_tree_knowledge
+        if self.in_tree_knowledge:
+            print("\n TODO: Fix in MCTS.py get_move Function to initalized nodes \
+                  with prior knowledge\n")
+
         for n in range(num_simulation):
             board_copy = board.copy()
             self._playout(board_copy, toplay)
