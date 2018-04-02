@@ -35,5 +35,13 @@ class GtpConnection2(gtp_connection.GtpConnection):
         """
         Return list of policy moves for the current_player of the board
         """
-        self.respond("TODO: Add prior knowledge function in gtp_connection.py")
+        #TODO: Add prior knowledge function in gtp_connection.py
+        policy_moves, _ = GoBoardUtil.generate_all_policy_moves(self.board,
+                                                        self.go_engine.use_pattern,
+                                                        self.go_engine.check_selfatari)
+        moves_list = GoBoardUtil.sorted_point_string(policy_moves, self.board.NS)
+        policy_moves.append("Pass")
+        move_stats = []
+        self.respond("Statistics: " + str(move_stats))
+
 

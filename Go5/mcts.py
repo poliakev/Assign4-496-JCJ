@@ -179,6 +179,7 @@ class MCTS(object):
         self.exploration = exploration
         self.simulation_policy = simulation_policy
         self.in_tree_knowledge = in_tree_knowledge
+
         if self.in_tree_knowledge:
             print("\n TODO: Fix in MCTS.py get_move Function to initalized nodes \
                   with prior knowledge\n")
@@ -186,6 +187,7 @@ class MCTS(object):
         for n in range(num_simulation):
             board_copy = board.copy()
             self._playout(board_copy, toplay)
+
         # choose a move that has the most visit 
         moves_ls =  [(move, node._n_visits) for move, node in self._root._children.items()]
         if not moves_ls:
