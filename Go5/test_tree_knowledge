@@ -1,7 +1,8 @@
 #!/bin/bash
 # This script is used for unit testing with in-tree-knoledge option
+# runs predetermined commands, Assignment 4 Public case
 
-python3 Go5.py --movefilter --in_tree_knowledge --num_total_sim=1 <<EOF
+python3 Go5.py --movefilter --in_tree_knowledge=1 --num_total_sim=1 <<EOF
 
 boardsize 7
 clear_board
