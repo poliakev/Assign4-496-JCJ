@@ -5,7 +5,7 @@ sys.path.append(utilpath)
 utilpath = sys.path[0] + "/../Go4/"
 sys.path.append(utilpath)
 
-from gtp_connection import GtpConnection  
+from gtp_connection2 import GtpConnection2
 from board_util_go4 import GoBoardUtilGo4
 from simple_board import SimpleGoBoard
 from mcts import MCTS
@@ -17,6 +17,7 @@ parser.add_argument('--num_total_sim', type=int, default=300, help='number of si
 parser.add_argument('--simulations', type=str, default='random', help='type of simulation policy: random or rulebased or probabilistic')
 parser.add_argument('--movefilter', action='store_true', default=False, help='whether use move filter or not')
 parser.add_argument('--in_tree_knowledge', type=str, default='None', help='whether use move knowledge to initial a new node or not')
+
 
 args = parser.parse_args()
 num_simulation = args.num_total_sim
@@ -108,7 +109,7 @@ def run():
     start the gtp connection and wait for commands.
     """
     board = SimpleGoBoard(7)
-    con = GtpConnection(Go5Player(num_simulation), board)
+    con = GtpConnection2(Go5Player(num_simulation), board)
     con.start_connection()
 
 if __name__=='__main__':
