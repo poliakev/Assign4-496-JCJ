@@ -40,7 +40,8 @@ class GtpConnection2(gtp_connection.GtpConnection):
                                                         self.go_engine.use_pattern,
                                                         self.go_engine.check_selfatari)
         moves_list = GoBoardUtil.sorted_point_string(policy_moves, self.board.NS)
-        policy_moves.append("Pass")
+       # policy_list.append("Pass")
+        print(moves_list)
         move_stats = []
         self.respond("Statistics: " + str(move_stats))
 

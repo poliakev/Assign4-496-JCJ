@@ -1,0 +1,14 @@
+#!/bin/bash
+# This script is used for unit testing with in-tree-knoledge option
+# runs predetermined commands, Assignment 4 Public case
+
+python3 Go4.py --movefilter --simulations="probabilistic" <<EOF
+
+boardsize 3
+play b b2
+play w a2
+play b b3
+play w a3
+genmove b
+
+EOF
