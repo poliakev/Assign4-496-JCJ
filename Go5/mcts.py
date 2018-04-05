@@ -22,14 +22,14 @@ class TreeNode(object):
     """
     version = 0.22
     name = "MCTS Player"
-    def __init__(self, parent):
+    def __init__(self, parent, n_visits = 0, black_wins = 0):
         """
         parent is set when a node gets expanded
         """
         self._parent = parent
         self._children = {}  # a map from move to TreeNode
-        self._n_visits = 0
-        self._black_wins = 0
+        self._n_visits = n_visits
+        self._black_wins = black_wins
         self._expanded = False
         self._move = None
 
@@ -37,15 +37,36 @@ class TreeNode(object):
         """
         Expands tree by creating new children.
         """
-        moves = board.get_empty_points()
+        moves, prob =  generate_moves_with_feature_based_probs(board, color)
+
+        max_prob = max(prob)
+        # convert prob to simulation count and win for each move
+        sim = []
+        winrate = []
+        wins = []
         for move in moves:
+            # number of simulation per move
+            sim.append(10*prob[move]/max_prob)
+            
+            # winrate with linear scaling forumla
+            winrate.append((0.5/max_prob)*prob[move] + 0.5)
+
+            wins.append(int(round(winrate[-1]*sim[-1])))
+
             if move not in self._children:
-                if board.check_legal(move, color) and not board.is_eye(move, color):
-                    self._children[move] = TreeNode(self)
-                    self._children[move]._move = move
+                self._children[move] = TreeNode(self, sim[-1], wins[-1])
+                self._children[move]._move = move
+
         self._children[PASS] = TreeNode(self)
         self._children[PASS]._move = PASS
         self._expanded = True
+
+        '''
+        print("moves  :", moves)
+        print("sims   :", sim)
+        print("winrate:", winrate)
+        print("wins   :", wins)
+        '''
 
     def select(self, exploration, max_flag):
         """
@@ -92,7 +113,6 @@ class TreeNode(object):
 
     def is_root(self):
         return self._parent is None
-
 
 class MCTS(object):
     def __init__(self):
@@ -180,9 +200,8 @@ class MCTS(object):
         self.simulation_policy = simulation_policy
         self.in_tree_knowledge = in_tree_knowledge
 
-        if self.in_tree_knowledge:
-            print("\n TODO: Fix in MCTS.py get_move Function to initalized nodes \
-                  with prior knowledge\n")
+        if self.in_tree_knowledge == "probabilistic":
+            print("\n TODO: Fix in MCTS.py get_move Function to initalized nodes with prior knowledge\n")
 
         for n in range(num_simulation):
             board_copy = board.copy()
@@ -293,3 +312,26 @@ class MCTS(object):
             stats.append((pointString,win_rate,wins,visits))
         sys.stderr.write("Statistics: {} \n".format(sorted(stats,key=lambda i:i[3],reverse=True)))
         sys.stderr.flush()
+
+
+def generate_moves_with_feature_based_probs(board, color):
+        from feature import Features_weight
+        from feature import Feature
+        assert len(Features_weight) != 0
+        moves = []
+        gamma_sum = 0.0
+        empty_points = board.get_empty_points()
+        probs = np.zeros(board.maxpoint)
+        all_board_features = Feature.find_all_features(board)
+        for move in empty_points:
+            if board.check_legal(move, color) and not board.is_eye(move, color):
+                moves.append(move)
+                probs[move] = Feature.compute_move_gamma(Features_weight, all_board_features[move])
+                gamma_sum += probs[move]
+        if len(moves) != 0:
+            assert gamma_sum != 0.0
+            for m in moves:
+                probs[m] = probs[m] / gamma_sum
+        return moves, probs
+
+
