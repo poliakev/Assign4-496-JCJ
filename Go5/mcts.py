@@ -37,7 +37,7 @@ class TreeNode(object):
         """
         Expands tree by creating new children.
         """
-        moves, prob =  GoBoardUtilGo4.generate_moves_with_feature_based_probs(board)
+        moves, prob =  generate_moves_with_feature_based_probs(board, color)
 
         max_prob = max(prob)
         # convert prob to simulation count and win for each move
@@ -49,7 +49,7 @@ class TreeNode(object):
             sim.append(10*prob[move]/max_prob)
             
             # winrate with linear scaling forumla
-            winrate.append(0.5/max_prob*prob[move] + 0.5)
+            winrate.append((0.5/max_prob)*prob[move] + 0.5)
 
             wins.append(int(round(winrate[-1]*sim[-1])))
 
@@ -113,27 +113,6 @@ class TreeNode(object):
 
     def is_root(self):
         return self._parent is None
-
-    def generate_moves_with_feature_based_probs(self, board):
-        from feature import Features_weight
-        from feature import Feature
-        assert len(Features_weight) != 0
-        moves = []
-        gamma_sum = 0.0
-        empty_points = board.get_empty_points()
-        color = board.current_player
-        probs = np.zeros(board.maxpoint)
-        all_board_features = Feature.find_all_features(board)
-        for move in empty_points:
-            if board.check_legal(move, color) and not board.is_eye(move, color):
-                moves.append(move)
-                probs[move] = Feature.compute_move_gamma(Features_weight, all_board_features[move])
-                gamma_sum += probs[move]
-        if len(moves) != 0:
-            assert gamma_sum != 0.0
-            for m in moves:
-                probs[m] = probs[m] / gamma_sum
-        return moves, probs
 
 class MCTS(object):
     def __init__(self):
@@ -333,4 +312,26 @@ class MCTS(object):
             stats.append((pointString,win_rate,wins,visits))
         sys.stderr.write("Statistics: {} \n".format(sorted(stats,key=lambda i:i[3],reverse=True)))
         sys.stderr.flush()
+
+
+def generate_moves_with_feature_based_probs(board, color):
+        from feature import Features_weight
+        from feature import Feature
+        assert len(Features_weight) != 0
+        moves = []
+        gamma_sum = 0.0
+        empty_points = board.get_empty_points()
+        probs = np.zeros(board.maxpoint)
+        all_board_features = Feature.find_all_features(board)
+        for move in empty_points:
+            if board.check_legal(move, color) and not board.is_eye(move, color):
+                moves.append(move)
+                probs[move] = Feature.compute_move_gamma(Features_weight, all_board_features[move])
+                gamma_sum += probs[move]
+        if len(moves) != 0:
+            assert gamma_sum != 0.0
+            for m in moves:
+                probs[m] = probs[m] / gamma_sum
+        return moves, probs
+
 
