@@ -22,14 +22,14 @@ class TreeNode(object):
     """
     version = 0.22
     name = "MCTS Player"
-    def __init__(self, parent):
+    def __init__(self, parent, n_visits = 0, black_wins = 0):
         """
         parent is set when a node gets expanded
         """
         self._parent = parent
         self._children = {}  # a map from move to TreeNode
-        self._n_visits = 0
-        self._black_wins = 0
+        self._n_visits = n_visits
+        self._black_wins = black_wins
         self._expanded = False
         self._move = None
 
@@ -53,18 +53,20 @@ class TreeNode(object):
 
             wins.append(int(round(winrate[-1]*sim[-1])))
 
+            if move not in self._children:
+                self._children[move] = TreeNode(self, sim[-1], wins[-1])
+                self._children[move]._move = move
+
+        self._children[PASS] = TreeNode(self)
+        self._children[PASS]._move = PASS
+        self._expanded = True
+
+        '''
         print("moves  :", moves)
         print("sims   :", sim)
         print("winrate:", winrate)
         print("wins   :", wins)
-
-        for move in moves:
-            if move not in self._children:
-                self._children[move] = TreeNode(self)
-                self._children[move]._move = move
-        self._children[PASS] = TreeNode(self)
-        self._children[PASS]._move = PASS
-        self._expanded = True
+        '''
 
     def select(self, exploration, max_flag):
         """

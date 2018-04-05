@@ -78,7 +78,6 @@ class Go5Player():
         self.MCTS.update_with_move(move)
 
     def get_move(self, board, toplay):
-        #moves, prob = GoBoardUtilGo4.generate_moves_with_feature_based_probs(board)
         move = self.MCTS.get_move(board,
                 toplay,
                 komi=self.komi,
