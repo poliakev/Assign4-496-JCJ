@@ -7,7 +7,7 @@ import numpy as np
 import random
 from board_util_go4 import GoBoardUtilGo4, BLACK, WHITE
 PASS = 'pass'
-
+np.seterr(all='ignore') 
 def uct_val(node, child, exploration, max_flag): 
     if child._n_visits == 0:
         return 0
