@@ -10,7 +10,8 @@ PASS = 'pass'
 
 def uct_val(node, child, exploration, max_flag): 
     if child._n_visits == 0:
-        return float("inf")
+        return 0
+        # return float("inf")
     if max_flag:
         return float(child._black_wins)/child._n_visits + exploration*np.sqrt(np.log(node._n_visits)/child._n_visits)
     else:
@@ -213,7 +214,8 @@ class MCTS(object):
             return None
         moves_ls = sorted(moves_ls,key=lambda i:i[1],reverse=True)
         move = moves_ls[0]
-        self.print_stat(board, self._root, toplay)
+        self.prior_knowledge_stat(board, self._root, toplay)
+        #self.print_stat(board, self._root, toplay)
         #self.good_print(board,self._root,self.toplay,10)
         if move[0] == PASS:
             return None
@@ -313,6 +315,82 @@ class MCTS(object):
         sys.stderr.write("Statistics: {} \n".format(sorted(stats,key=lambda i:i[3],reverse=True)))
         sys.stderr.flush()
 
+    def prior_knowledge_stat(self, board, root, color):
+        s_color = GoBoardUtilGo4.int_to_color(color)
+
+        stats=[]
+        for move,node in root._children.items():
+            if color == BLACK:
+                wins = node._black_wins
+            else:
+                wins = node._n_visits - node._black_wins
+            visits = node._n_visits
+            if visits:
+                win_rate = round(float(wins)/visits,2)    
+            else:
+                win_rate = 0
+            if move==PASS:
+                move = None
+            pointString = board.point_to_string(move)
+            stats.append((pointString,wins,visits,win_rate))
+        lst= sorted(stats,key=lambda i:i[3],reverse=True)
+        master =[]
+        
+        for stuff in lst:
+            x= len(stuff)-1
+            # print(stuff[0:x])
+            rnum = int(round(stuff[2]))
+          
+            # print(int(round(stuff[2])))
+            lst1 =[stuff[0],stuff[1],rnum]
+            master.append(lst1)
+            
+        #sys.stderr.write("Sstatistics: {} \n".format(lst))
+        sys.stderr.flush()
+        return master
+    def prior_knowledge_move(self,
+            board,
+            toplay,
+            komi,
+            limit,
+            check_selfatari,
+            use_pattern,
+            num_simulation,
+            exploration,
+            simulation_policy,
+            in_tree_knowledge):
+        """
+        Runs all playouts sequentially and returns the most visited move.
+        """
+        if self.toplay != toplay:
+            sys.stderr.write("Dumping the subtree! \n")
+            sys.stderr.flush()
+            self._root = TreeNode(None)
+        self.komi = komi
+        self.limit = limit
+        self.check_selfatari = check_selfatari
+        self.use_pattern = use_pattern
+        self.toplay = toplay
+        self.exploration = exploration
+        self.simulation_policy = simulation_policy
+        self.in_tree_knowledge = in_tree_knowledge
+
+        if self.in_tree_knowledge == "probabilistic":
+            print("\n TODO: Fix in MCTS.py get_move Function to initalized nodes with prior knowledge\n")
+
+        for n in range(num_simulation):
+            board_copy = board.copy()
+            self._playout(board_copy, toplay)
+
+        # choose a move that has the most visit 
+        moves_ls =  [(move, node._n_visits) for move, node in self._root._children.items()]
+        if not moves_ls:
+            return None
+        moves_ls = sorted(moves_ls,key=lambda i:i[1],reverse=True)
+        move = moves_ls[0]
+        lst = self.prior_knowledge_stat(board, self._root, toplay)
+        return lst
+
 
 def generate_moves_with_feature_based_probs(board, color):
         from feature import Features_weight
@@ -333,5 +411,3 @@ def generate_moves_with_feature_based_probs(board, color):
             for m in moves:
                 probs[m] = probs[m] / gamma_sum
         return moves, probs
-
-
