@@ -50,7 +50,7 @@ class GtpConnection2(gtp_connection.GtpConnection):
                 move_string += str(m) + " "
         #print(move_string) 
         move_stats = []
-        self.respond("gtpStatistics: " + str(move_string))
+        self.respond("Statistics: " + str(move_string))
     def prior_knowledge_stat(self, board, root, color):
         s_color = GoBoardUtilGo4.int_to_color(color)
 
