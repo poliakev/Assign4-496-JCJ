@@ -6,8 +6,12 @@ import os, sys
 import numpy as np
 import random
 from board_util_go4 import GoBoardUtilGo4, BLACK, WHITE
-PASS = 'pass'
+from feature import Features_weight
+from feature import Feature
+
+PASS = 'PASS'
 np.seterr(all='ignore') 
+
 def uct_val(node, child, exploration, max_flag): 
     if child._n_visits == 0:
         return 0
@@ -33,41 +37,37 @@ class TreeNode(object):
         self._black_wins = black_wins
         self._expanded = False
         self._move = None
+        self._prior_knowledge = False
 
     def expand(self, board, color):
         """
         Expands tree by creating new children.
         """
-        moves, prob =  generate_moves_with_feature_based_probs(board, color)
 
-        max_prob = max(prob)
-        # convert prob to simulation count and win for each move
-        sim = []
-        winrate = []
-        wins = []
-        for move in moves:
+        if self._prior_knowledge:
+            moves, prob =  generate_moves_with_feature_based_probs(board, color)
+
+            max_prob = prob[max(prob, key=prob.get)]
+            # convert prob to simulation count and win for each move
+            sim = {}
+            winrate = {}
+            wins = {}
+            for move in moves:
             # number of simulation per move
-            sim.append(10*prob[move]/max_prob)
-            
-            # winrate with linear scaling forumla
-            winrate.append((0.5/max_prob)*prob[move] + 0.5)
+                sim[move] = 10*prob[move]/max_prob
 
-            wins.append(int(round(winrate[-1]*sim[-1])))
+                # winrate with linear scaling forumla
+                winrate[move] = (0.5/max_prob)*prob[move] + 0.5
 
-            if move not in self._children:
-                self._children[move] = TreeNode(self, sim[-1], wins[-1])
-                self._children[move]._move = move
+                wins[move] = int(round(winrate[move]*sim[move]))
 
-        self._children[PASS] = TreeNode(self)
-        self._children[PASS]._move = PASS
-        self._expanded = True
+                if move not in self._children:
+                    self._children[move] = TreeNode(self, sim[move], wins[move])
+                    self._children[move]._move = move
 
-        '''
-        print("moves  :", moves)
-        print("sims   :", sim)
-        print("winrate:", winrate)
-        print("wins   :", wins)
-        '''
+            #self._children[PASS] = TreeNode(self, sim[-1], wins[-1])
+            #self._children[PASS]._move = PASS
+            self._expanded = True
 
     def select(self, exploration, max_flag):
         """
@@ -202,7 +202,7 @@ class MCTS(object):
         self.in_tree_knowledge = in_tree_knowledge
 
         if self.in_tree_knowledge == "probabilistic":
-            print("\n TODO: Fix in MCTS.py get_move Function to initalized nodes with prior knowledge\n")
+            self._root._prior_knowledge = True
 
         for n in range(num_simulation):
             board_copy = board.copy()
@@ -348,6 +348,7 @@ class MCTS(object):
         #sys.stderr.write("Sstatistics: {} \n".format(lst))
         sys.stderr.flush()
         return master
+
     def prior_knowledge_move(self,
             board,
             toplay,
@@ -376,7 +377,7 @@ class MCTS(object):
         self.in_tree_knowledge = in_tree_knowledge
 
         if self.in_tree_knowledge == "probabilistic":
-            print("\n TODO: Fix in MCTS.py get_move Function to initalized nodes with prior knowledge\n")
+            self._root._prior_knowledge = True
 
         for n in range(num_simulation):
             board_copy = board.copy()
@@ -392,6 +393,32 @@ class MCTS(object):
         return lst
 
 
+def generate_moves_with_feature_based_probs2(board, color):
+        from feature import Features_weight
+        from feature import Feature
+        assert len(Features_weight) != 0
+        moves = []
+        gamma_sum = 0.0
+        empty_points = board.get_empty_points()
+        probs = np.zeros(board.maxpoint + 1)
+        all_board_features = Feature.find_all_features(board)
+        for move in empty_points:
+            if board.check_legal(move, color) and not board.is_eye(move, color):
+                moves.append(move)
+                probs[move] = Feature.compute_move_gamma(Features_weight, all_board_features[move])
+                gamma_sum += probs[move]
+        
+        #TODO: Adding pass fucks it up, make it not
+        #probs[board.maxpoint] = Feature.compute_move_gamma(Features_weight,
+        #                                          all_board_features["PASS"])
+        #gamma_sum += probs[board.maxpoint]
+        ##
+        if len(moves) != 0:
+            assert gamma_sum != 0.0
+            for m in moves:
+                probs[m] = probs[m] / gamma_sum
+        return moves, probs
+
 def generate_moves_with_feature_based_probs(board, color):
         from feature import Features_weight
         from feature import Feature
@@ -399,13 +426,24 @@ def generate_moves_with_feature_based_probs(board, color):
         moves = []
         gamma_sum = 0.0
         empty_points = board.get_empty_points()
-        probs = np.zeros(board.maxpoint)
+        empty_points.append("PASS")
+        probs = {}
         all_board_features = Feature.find_all_features(board)
         for move in empty_points:
-            if board.check_legal(move, color) and not board.is_eye(move, color):
+            if move == "PASS":
                 moves.append(move)
                 probs[move] = Feature.compute_move_gamma(Features_weight, all_board_features[move])
                 gamma_sum += probs[move]
+            elif board.check_legal(move, color) and not board.is_eye(move, color):
+                moves.append(move)
+                probs[move] = Feature.compute_move_gamma(Features_weight, all_board_features[move])
+                gamma_sum += probs[move]
+
+        '''
+        probs[-1] = Feature.compute_move_gamma(Features_weight,all_board_features["PASS"])
+        gamma_sum += probs[-1]
+        moves.append("PASS")
+        '''
         if len(moves) != 0:
             assert gamma_sum != 0.0
             for m in moves:

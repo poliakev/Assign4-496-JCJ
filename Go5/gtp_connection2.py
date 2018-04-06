@@ -11,7 +11,6 @@ from board_util_go4 import GoBoardUtilGo4
 import gtp_connection
 import numpy as np
 import re
-from mcts import MCTS
 
 class GtpConnection2(gtp_connection.GtpConnection):
 
@@ -40,53 +39,62 @@ class GtpConnection2(gtp_connection.GtpConnection):
                                                         self.go_engine.use_pattern,
                                                         self.go_engine.check_selfatari)
 
-        #policy_list.append("Pass")
-        self.MCTS = MCTS()
-        move_set =self.get_move(self.board,self.MCTS.toplay)
-        #lst=self.MCTS.prior_knowledge_stat(self.board, self.MCTS._root, self.MCTS.toplay)
-        move_string = ""
-        for m_set in move_set:
-            for m in m_set:
-                move_string += str(m) + " "
-        #print(move_string) 
-        move_stats = []
-        self.respond("Statistics: " + str(move_string))
-    def prior_knowledge_stat(self, board, root, color):
-        s_color = GoBoardUtilGo4.int_to_color(color)
+        policy_moves.append("PASS")
 
-        stats=[]
-        for move,node in root._children.items():
-            if color == BLACK:
-                wins = node._black_wins
+        moves, prob = generate_moves_with_feature_based_probs(self.board)
+        max_prob = prob[max(prob, key=prob.get)]
+        sim = {}
+        winrate = {}
+        wins = {}
+        for move in policy_moves:
+        # number of simulation per move
+            sim[move] = 10*prob[move]/max_prob
+
+            # winrate with linear scaling forumla
+            winrate[move] = (0.5/max_prob)*prob[move] + 0.5
+
+            wins[move] = int(round(winrate[move]*sim[move]))
+
+        stats = "Statistics: ["
+        for move in sorted(winrate, key=winrate.get, reverse=True):
+            if move != "PASS":
+                pointString = self.board.point_to_string(move)
             else:
-                wins = node._n_visits - node._black_wins
-            visits = node._n_visits
-            if visits:
-                win_rate = round(float(wins)/visits,2)    
-            else:
-                win_rate = 0
-            if move==PASS:
-                move = None
-            pointString = board.point_to_string(move)
-            stats.append((pointString,wins,visits,win_rate))
-        lst= sorted(stats,key=lambda i:i[3],reverse=True)
-        for stuff in lst:
-            print(stuff)
-            # del
-        #sys.stderr.write("Sstatistics: {} \n".format(lst))
-        sys.stderr.flush()
-        return lst
-    def get_move(self, board, toplay):
+                pointString = "Pass"
+            stats = stats + pointString + " " + str(wins[move]) + " " + str(int(round(sim[move]))) + " "
 
-        move = self.MCTS.prior_knowledge_move(board,
-                toplay,
-                komi=self.go_engine.komi,
-                limit=self.go_engine.limit,
-                check_selfatari=self.go_engine.check_selfatari,
-                use_pattern=self.go_engine.use_pattern,
-                num_simulation = self.go_engine.num_simulation,
-                exploration = self.go_engine.exploration,
-                simulation_policy = self.go_engine.simulation_policy,
-                in_tree_knowledge = self.go_engine.in_tree_knowledge)
-        return move
+        stats = stats[:-1] + "]"
 
+        self.respond(stats)
+
+def generate_moves_with_feature_based_probs(board):
+        from feature import Features_weight
+        from feature import Feature
+        assert len(Features_weight) != 0
+        moves = []
+        color = board.current_player
+        gamma_sum = 0.0
+        empty_points = board.get_empty_points()
+        empty_points.append("PASS")
+        probs = {}
+        all_board_features = Feature.find_all_features(board)
+        for move in empty_points:
+            if move == "PASS":
+                moves.append(move)
+                probs[move] = Feature.compute_move_gamma(Features_weight, all_board_features[move])
+                gamma_sum += probs[move]
+            elif board.check_legal(move, color) and not board.is_eye(move, color):
+                moves.append(move)
+                probs[move] = Feature.compute_move_gamma(Features_weight, all_board_features[move])
+                gamma_sum += probs[move]
+
+        '''
+        probs[-1] = Feature.compute_move_gamma(Features_weight,all_board_features["PASS"])
+        gamma_sum += probs[-1]
+        moves.append("PASS")
+        '''
+        if len(moves) != 0:
+            assert gamma_sum != 0.0
+            for m in moves:
+                probs[m] = probs[m] / gamma_sum
+        return moves, probs
