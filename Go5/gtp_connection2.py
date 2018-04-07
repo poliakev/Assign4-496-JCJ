@@ -55,7 +55,8 @@ class GtpConnection2(gtp_connection.GtpConnection):
 
             wins[move] = int(round(winrate[move]*sim[move]))
 
-        stats = "Statistics: ["
+        #TODO: Put this in winrate AND alphanumeric order 
+        stats = ""
         for move in sorted(winrate, key=winrate.get, reverse=True):
             if move != "PASS":
                 pointString = self.board.point_to_string(move)
@@ -63,7 +64,7 @@ class GtpConnection2(gtp_connection.GtpConnection):
                 pointString = "Pass"
             stats = stats + pointString + " " + str(wins[move]) + " " + str(int(round(sim[move]))) + " "
 
-        stats = stats[:-1] + "]"
+        stats = stats[:-1]
 
         self.respond(stats)
 
