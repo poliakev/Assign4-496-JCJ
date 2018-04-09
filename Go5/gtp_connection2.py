@@ -57,7 +57,46 @@ class GtpConnection2(gtp_connection.GtpConnection):
 
         #TODO: Put this in winrate AND alphanumeric order 
         stats = ""
-        for move in sorted(winrate, key=winrate.get, reverse=True):
+        winsorted = sorted(winrate, key=winrate.get, reverse=True)
+        alpha_num_sorted = []
+        place = 0
+
+        for i in range(len(winsorted)):
+            if winsorted[i] != "PASS":
+                alpha_num_sorted.append(self.board.point_to_string(winsorted[i]))
+            else:
+                alpha_num_sorted.append("Pass")
+
+        for i in range(len(alpha_num_sorted)):
+            if i < (len(alpha_num_sorted)-1):
+                place = i
+                while winrate[winsorted[i]] == winrate[winsorted[place+1]]:
+                    if winsorted[i] == "PASS":
+                        break
+                    else:
+                        if alpha_num_sorted[i][0] > alpha_num_sorted[place+1][0]:
+                            temp1 = winsorted[i]
+                            temp2 = alpha_num_sorted[i]
+                            winsorted[i] = winsorted[place+1]
+                            winsorted[place+1] = temp1
+                            alpha_num_sorted[i] = alpha_num_sorted[place+1]
+                            alpha_num_sorted[place+1] = temp2
+                        elif alpha_num_sorted[i][0] == alpha_num_sorted[place+1][0]:
+                            if alpha_num_sorted[i][1:] > alpha_num_sorted[place+1][1:]:
+                                temp1 = winsorted[i]
+                                temp2 = alpha_num_sorted[i]
+                                winsorted[i] = winsorted[place+1]
+                                winsorted[place+1] = temp1
+                                alpha_num_sorted[i] = alpha_num_sorted[place+1]
+                                alpha_num_sorted[place+1] = temp2
+
+                        if (place + 2) < (len(winsorted)):
+                            place = place + 1
+                        else:
+                            break
+                    
+
+        for move in winsorted:
             if move != "PASS":
                 pointString = self.board.point_to_string(move)
             else:
